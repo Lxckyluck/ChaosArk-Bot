@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { config } from './config.js';
 import { log } from './logger.js';
-import { startPlayerEventWatcher } from './watchers/playerEvents.js';
+import { startPlayerEventsDbWatcher } from './watchers/playerEventsDb.js';
 import { startAdminCommandWatcher } from './watchers/adminCommands.js';
 import { startShopWatcher } from './watchers/shopWatcher.js';
 import { startAutoRefresh as startPlayerCache } from './playerCache.js';
@@ -31,14 +31,15 @@ client.once(Events.ClientReady, async (c) => {
 
   // Démarre les watchers
   try {
-    startPlayerCache();  // doit démarrer AVANT le watcher d'events pour avoir le cache prêt
+    startPlayerCache();  // utile pour /players (nom→EOSID)
   } catch (e) {
     log.error('Player cache:', e);
   }
   try {
-    startPlayerEventWatcher(client);
+    // Watcher MySQL: lit la table player_events (alimentée par plugin PlayerTracker)
+    await startPlayerEventsDbWatcher(client);
   } catch (e) {
-    log.error('Player watcher:', e);
+    log.error('Player events DB watcher:', e);
   }
   try {
     startAdminCommandWatcher(client);
