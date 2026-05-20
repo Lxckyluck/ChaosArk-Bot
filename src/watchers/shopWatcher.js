@@ -3,71 +3,88 @@ import { config } from '../config.js';
 import { getShopPool } from '../mysql.js';
 import { log } from '../logger.js';
 
-// FusionShop stocke généralement les transactions dans une table de type
-// "Transactions" ou "Logs" avec colonnes (id, player_id/eos, item, price, date).
-// Le nom exact de la table dépend de la version — on essaie d'auto-détecter.
-//
-// Si ta table s'appelle autrement, modifie SHOP_TABLE et les colonnes.
+// Table FusionShop (format réel observé): `_shoplog`
+// Colonnes utiles:
+//   eosId          - EOSID du joueur
+//   descr          - Description lisible de l'achat ("Kit Starter", etc.)
+//   timestamp      - Unix timestamp de l'event
+//   amount         - Quantité
+//   points_change  - Variation de points
+//   newpoints      - Nouveau total
+//   isBuy / isSell / isRedeem - Type de transaction
+//   serverid       - ID du serveur (numérique)
 
-const SHOP_TABLE = process.env.FUSIONSHOP_TABLE || 'Transactions';
-const COL_ID     = process.env.FUSIONSHOP_COL_ID     || 'id';
-const COL_PLAYER = process.env.FUSIONSHOP_COL_PLAYER || 'eos_id';
-const COL_NAME   = process.env.FUSIONSHOP_COL_NAME   || 'player_name';
-const COL_ITEM   = process.env.FUSIONSHOP_COL_ITEM   || 'item_name';
-const COL_PRICE  = process.env.FUSIONSHOP_COL_PRICE  || 'price';
-const COL_DATE   = process.env.FUSIONSHOP_COL_DATE   || 'created_at';
+const TABLE = process.env.FUSIONSHOP_TABLE || '_shoplog';
 
-let lastSeenId = 0;
+let lastSeenTs = 0;
 let started = false;
+const POLL_INTERVAL = config.fusionShop.pollInterval; // par défaut 30s
 
-async function initLastId() {
+async function initLastTs() {
   try {
     const [rows] = await getShopPool().execute(
-      `SELECT MAX(\`${COL_ID}\`) AS maxId FROM \`${SHOP_TABLE}\``
+      `SELECT MAX(timestamp) AS maxTs FROM \`${TABLE}\``
     );
-    lastSeenId = Number(rows[0]?.maxId) || 0;
-    log.info(`FusionShop: lastSeenId initialisé à ${lastSeenId}`);
+    lastSeenTs = Number(rows[0]?.maxTs) || Math.floor(Date.now() / 1000);
+    log.info(`FusionShop: lastSeenTs initialisé à ${lastSeenTs}`);
+    return true;
   } catch (e) {
-    log.warn(`FusionShop: impossible de lire la table ${SHOP_TABLE} (${e.message}). Watcher désactivé.`);
+    log.warn(`FusionShop: table ${TABLE} introuvable (${e.message}). Watcher désactivé.`);
     return false;
   }
-  return true;
+}
+
+function txTypeLabel(row) {
+  if (row.isBuy)    return { label: '🛒 Achat',       color: 0xffd700 };
+  if (row.isSell)   return { label: '💰 Vente',       color: 0x44dd44 };
+  if (row.isRedeem) return { label: '🎁 Redeem',      color: 0x44aaff };
+  return { label: '📦 Transaction', color: 0x999999 };
 }
 
 async function pollOnce(client) {
   try {
     const [rows] = await getShopPool().execute(
-      `SELECT \`${COL_ID}\` AS id,
-              \`${COL_PLAYER}\` AS eos,
-              \`${COL_NAME}\` AS name,
-              \`${COL_ITEM}\` AS item,
-              \`${COL_PRICE}\` AS price,
-              \`${COL_DATE}\` AS date
-         FROM \`${SHOP_TABLE}\`
-        WHERE \`${COL_ID}\` > ?
-        ORDER BY \`${COL_ID}\` ASC
-        LIMIT 50`,
-      [lastSeenId]
+      `SELECT eosId, descr, timestamp, amount, points_change, newpoints,
+              isBuy, isSell, isRedeem, serverid
+         FROM \`${TABLE}\`
+        WHERE timestamp > ?
+        ORDER BY timestamp ASC
+        LIMIT 100`,
+      [lastSeenTs]
     );
     if (rows.length === 0) return;
 
     const channel = await client.channels.fetch(config.discord.channels.shopLog).catch(() => null);
-    if (!channel) return;
+    if (!channel) {
+      lastSeenTs = Number(rows[rows.length - 1].timestamp);
+      return;
+    }
 
-    for (const tx of rows) {
+    for (const r of rows) {
+      const { label, color } = txTypeLabel(r);
+
+      const fields = [
+        { name: 'EOSID',    value: `\`${r.eosId || '?'}\``,           inline: false },
+        { name: 'Item',     value: r.descr || '_(sans description)_', inline: true  },
+        { name: 'Quantité', value: String(r.amount ?? 1),             inline: true  },
+      ];
+
+      if (r.points_change != null && r.points_change !== 0) {
+        const sign = r.points_change > 0 ? '+' : '';
+        fields.push({ name: 'Points', value: `${sign}${r.points_change}`, inline: true });
+      }
+      if (r.newpoints != null) {
+        fields.push({ name: 'Solde restant', value: String(r.newpoints), inline: true });
+      }
+
       const embed = new EmbedBuilder()
-        .setColor(0xffd700)
-        .setTitle('🛒 Achat FusionShop')
-        .addFields(
-          { name: 'Joueur', value: tx.name || '?', inline: true },
-          { name: 'EOSID', value: `\`${tx.eos || '?'}\``, inline: true },
-          { name: 'Objet', value: tx.item || '?', inline: false },
-          { name: 'Prix', value: String(tx.price ?? '?'), inline: true }
-        )
-        .setTimestamp(tx.date ? new Date(tx.date) : new Date());
+        .setColor(color)
+        .setTitle(`${label} FusionShop`)
+        .addFields(fields)
+        .setTimestamp(new Date(Number(r.timestamp) * 1000));
 
       channel.send({ embeds: [embed] }).catch((e) => log.error('Send shop:', e.message));
-      lastSeenId = tx.id;
+      lastSeenTs = Math.max(lastSeenTs, Number(r.timestamp));
     }
   } catch (e) {
     log.error('Poll FusionShop:', e.message);
@@ -76,9 +93,9 @@ async function pollOnce(client) {
 
 export async function startShopWatcher(client) {
   if (started) return;
-  const ok = await initLastId();
+  const ok = await initLastTs();
   if (!ok) return;
   started = true;
-  setInterval(() => pollOnce(client), config.fusionShop.pollInterval);
-  log.info(`FusionShop watcher actif (interval ${config.fusionShop.pollInterval}ms)`);
+  setInterval(() => pollOnce(client), POLL_INTERVAL);
+  log.info(`FusionShop watcher actif sur \`${TABLE}\` (interval ${POLL_INTERVAL}ms)`);
 }
