@@ -39,7 +39,7 @@ async function emitJoin(client, server, name, eos) {
 
   let pos = null;
   if (config.options.playerLocationLookup) {
-    pos = await getPlayerPos(server.id, name);
+    pos = await getPlayerPos(server.id, { name, eos });
   }
 
   const embed = new EmbedBuilder()
@@ -64,7 +64,7 @@ async function emitLeave(client, server, name, eos) {
 
   let pos = null;
   if (config.options.playerLocationLookup) {
-    pos = await getPlayerPos(server.id, name);
+    pos = await getPlayerPos(server.id, { name, eos });
   }
 
   const embed = new EmbedBuilder()

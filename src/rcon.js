@@ -69,12 +69,50 @@ export async function listPlayers(serverId) {
   return players;
 }
 
-// Récupère la position d'un joueur via son nom — retourne la string brute
-export async function getPlayerPos(serverId, playerName) {
-  try {
-    const r = await send(serverId, `GetPlayerPos ${playerName}`);
-    return r.trim();
-  } catch {
-    return null;
+// Réponses ARK considérées comme "pas de résultat utile" — à filtrer.
+const EMPTY_RESPONSES = [
+  /^server received,?\s*but no response/i,
+  /^no players?\s*online/i,
+  /^command not found/i,
+  /^couldn't find/i,
+  /^could not find/i,
+];
+
+function isEmptyResponse(raw) {
+  const t = (raw || '').trim();
+  if (!t) return true;
+  return EMPTY_RESPONSES.some((re) => re.test(t));
+}
+
+/**
+ * Récupère la position d'un joueur.
+ * On essaye plusieurs syntaxes parce qu'ARK Ascended a un comportement
+ * variable selon le build et les plugins installés:
+ *   1. GetPlayerPos <EOSID>      ← le plus fiable si dispo
+ *   2. GetPlayerPos <PlayerName>
+ *   3. GetPlayerLocation <EOSID> ← variante exposée par certains plugins
+ *
+ * @param {string} serverId
+ * @param {{name?: string, eos?: string}} target
+ * @returns {Promise<string|null>}
+ */
+export async function getPlayerPos(serverId, target) {
+  // Compat: si target est une string, on traite comme un nom
+  if (typeof target === 'string') target = { name: target };
+  const { name, eos } = target || {};
+
+  const attempts = [];
+  if (eos)  attempts.push(`GetPlayerPos ${eos}`);
+  if (name) attempts.push(`GetPlayerPos ${name}`);
+  if (eos)  attempts.push(`GetPlayerLocation ${eos}`);
+
+  for (const cmd of attempts) {
+    try {
+      const r = (await send(serverId, cmd))?.trim();
+      if (r && !isEmptyResponse(r)) return r;
+    } catch {
+      // on essaye la suivante
+    }
   }
+  return null;
 }
