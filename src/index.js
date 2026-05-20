@@ -7,6 +7,7 @@ import { log } from './logger.js';
 import { startPlayerEventsDbWatcher } from './watchers/playerEventsDb.js';
 import { startAdminCommandWatcher } from './watchers/adminCommands.js';
 import { startShopWatcher } from './watchers/shopWatcher.js';
+import { startBanWatcher } from './watchers/banWatcher.js';
 import { startAutoRefresh as startPlayerCache } from './playerCache.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -50,6 +51,11 @@ client.once(Events.ClientReady, async (c) => {
     await startShopWatcher(client);
   } catch (e) {
     log.error('Shop watcher:', e);
+  }
+  try {
+    await startBanWatcher(client);
+  } catch (e) {
+    log.error('Ban watcher:', e);
   }
 });
 
