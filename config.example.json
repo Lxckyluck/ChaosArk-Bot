@@ -1,0 +1,28 @@
+{
+  "servers": [
+    {
+      "id": "abberation",
+      "name": "Aberration",
+      "rcon": {
+        "host": "127.0.0.1",
+        "port": 27020,
+        "password": "MOT_DE_PASSE_RCON_ABBERATION"
+      },
+      "logFile": "D:\\ChaosArk\\ClusterSolo\\Abberation\\ShooterGame\\Saved\\Logs\\ShooterGame.log"
+    },
+    {
+      "id": "island",
+      "name": "The Island",
+      "rcon": {
+        "host": "127.0.0.1",
+        "port": 27021,
+        "password": "MOT_DE_PASSE_RCON_ISLAND"
+      },
+      "logFile": "D:\\ChaosArk\\ClusterSolo\\Island\\ShooterGame\\Saved\\Logs\\ShooterGame.log"
+    }
+  ],
+  "options": {
+    "playerLocationLookup": true,
+    "logFileEncoding": "utf-8"
+  }
+}
