@@ -30,8 +30,8 @@ async function initLastId() {
 
 function formatPos(x, y, z) {
   if (x == null || y == null || z == null) return null;
-  // ARK coords (Unreal units, divisé par 100 pour avoir des mètres approximatifs)
-  return `X: ${Math.round(x)}, Y: ${Math.round(y)}, Z: ${Math.round(z)}`;
+  // Format de commande cheat prête à copier-coller in-game
+  return `cheat SetPlayerPos ${Math.round(x)} ${Math.round(y)} ${Math.round(z)}`;
 }
 
 async function pollOnce(client) {
@@ -67,8 +67,8 @@ async function pollOnce(client) {
       const pos = formatPos(ev.pos_x, ev.pos_y, ev.pos_z);
       if (pos) {
         embed.addFields({
-          name: isJoin ? 'Position' : 'Dernière position',
-          value: `\`${pos}\``,
+          name: isJoin ? '🧭 TP à sa position' : '🧭 TP à sa dernière position',
+          value: `\`\`\`${pos}\`\`\``,
           inline: false,
         });
       }
