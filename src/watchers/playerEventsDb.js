@@ -2,6 +2,7 @@ import { EmbedBuilder } from 'discord.js';
 import { config } from '../config.js';
 import { getBanPool } from '../mysql.js';
 import { log } from '../logger.js';
+import { registerPlayer, notifyNewPlayer } from '../playerRegistry.js';
 
 // Poll de la table `player_events` (alimentée par le plugin PlayerTracker côté serveur).
 // Format attendu (créé auto par le plugin):
@@ -54,6 +55,20 @@ async function pollOnce(client) {
 
     for (const ev of rows) {
       const isJoin = ev.event_type === 'join';
+
+      // À chaque connexion: upsert du joueur dans la table `players`.
+      // Si c'est une PREMIÈRE connexion (EOSID inconnu), on notifie aussi Discord.
+      if (isJoin && ev.eos_id) {
+        const isNew = await registerPlayer(ev.eos_id, ev.player_name);
+        if (isNew) {
+          await notifyNewPlayer(client, {
+            eos_id: ev.eos_id,
+            player_name: ev.player_name,
+            server_name: ev.server_name,
+          });
+        }
+      }
+
       const embed = new EmbedBuilder()
         .setColor(isJoin ? 0x44dd44 : 0xdd4444)
         .setTitle(isJoin ? '🟢 Connexion' : '🔴 Déconnexion')
