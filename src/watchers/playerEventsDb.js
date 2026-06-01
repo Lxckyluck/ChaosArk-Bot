@@ -53,16 +53,14 @@ async function pollOnce(client) {
       return;
     }
 
-    const knownNames = new Set(config.servers.map((s) => s.name.toLowerCase()));
+    const ignoredNames = new Set(
+      (process.env.IGNORED_SERVER_NAMES || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
+    );
 
     for (const ev of rows) {
       lastSeenId = ev.id;
 
-      // Ignore les événements provenant d'un serveur absent de config.json
-      if (ev.server_name && !knownNames.has(ev.server_name.toLowerCase())) {
-        log.warn(`playerEventsDb: événement ignoré, serveur inconnu "${ev.server_name}"`);
-        continue;
-      }
+      if (ev.server_name && ignoredNames.has(ev.server_name.toLowerCase())) continue;
 
       const isJoin = ev.event_type === 'join';
 
