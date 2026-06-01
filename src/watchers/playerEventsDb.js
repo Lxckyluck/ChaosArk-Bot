@@ -53,7 +53,17 @@ async function pollOnce(client) {
       return;
     }
 
+    const knownNames = new Set(config.servers.map((s) => s.name.toLowerCase()));
+
     for (const ev of rows) {
+      lastSeenId = ev.id;
+
+      // Ignore les événements provenant d'un serveur absent de config.json
+      if (ev.server_name && !knownNames.has(ev.server_name.toLowerCase())) {
+        log.warn(`playerEventsDb: événement ignoré, serveur inconnu "${ev.server_name}"`);
+        continue;
+      }
+
       const isJoin = ev.event_type === 'join';
 
       // À chaque connexion: upsert du joueur dans la table `players`.
@@ -89,7 +99,6 @@ async function pollOnce(client) {
       }
 
       channel.send({ embeds: [embed] }).catch((e) => log.error('Send event:', e.message));
-      lastSeenId = ev.id;
     }
   } catch (e) {
     log.error('Poll player_events:', e.message);

@@ -1,24 +1,74 @@
 {
   "servers": [
     {
-      "id": "abberation",
-      "name": "Aberration",
+      "id": "island",
+      "name": "TheIsland",
       "rcon": {
         "host": "127.0.0.1",
         "port": 27020,
-        "password": "MOT_DE_PASSE_RCON_ABBERATION"
+        "password": "MOT_DE_PASSE_RCON_ISLAND"
+      },
+      "logFile": "D:\\ChaosArk\\ClusterSolo\\Island\\ShooterGame\\Saved\\Logs\\ShooterGame.log"
+    },
+    {
+      "id": "thecenter",
+      "name": "TheCenter",
+      "rcon": {
+        "host": "127.0.0.1",
+        "port": 27021,
+        "password": "MOT_DE_PASSE_RCON_THECENTER"
+      },
+      "logFile": "D:\\ChaosArk\\ClusterSolo\\TheCenter\\ShooterGame\\Saved\\Logs\\ShooterGame.log"
+    },
+    {
+      "id": "ragnarok",
+      "name": "Ragnarok",
+      "rcon": {
+        "host": "127.0.0.1",
+        "port": 27022,
+        "password": "MOT_DE_PASSE_RCON_RAGNAROK"
+      },
+      "logFile": "D:\\ChaosArk\\ClusterSolo\\Ragnarok\\ShooterGame\\Saved\\Logs\\ShooterGame.log"
+    },
+    {
+      "id": "valguero",
+      "name": "Valguero",
+      "rcon": {
+        "host": "127.0.0.1",
+        "port": 27023,
+        "password": "MOT_DE_PASSE_RCON_VALGUERO"
+      },
+      "logFile": "D:\\ChaosArk\\ClusterSolo\\Valguero\\ShooterGame\\Saved\\Logs\\ShooterGame.log"
+    },
+    {
+      "id": "scorched",
+      "name": "Scorched",
+      "rcon": {
+        "host": "127.0.0.1",
+        "port": 27024,
+        "password": "MOT_DE_PASSE_RCON_SCORCHED"
+      },
+      "logFile": "D:\\ChaosArk\\ClusterSolo\\Scorched\\ShooterGame\\Saved\\Logs\\ShooterGame.log"
+    },
+    {
+      "id": "aberration",
+      "name": "Aberration",
+      "rcon": {
+        "host": "127.0.0.1",
+        "port": 27025,
+        "password": "MOT_DE_PASSE_RCON_ABERRATION"
       },
       "logFile": "D:\\ChaosArk\\ClusterSolo\\Abberation\\ShooterGame\\Saved\\Logs\\ShooterGame.log"
     },
     {
-      "id": "island",
-      "name": "The Island",
+      "id": "extinction",
+      "name": "Extinction",
       "rcon": {
         "host": "127.0.0.1",
-        "port": 27021,
-        "password": "MOT_DE_PASSE_RCON_ISLAND"
+        "port": 27026,
+        "password": "MOT_DE_PASSE_RCON_EXTINCTION"
       },
-      "logFile": "D:\\ChaosArk\\ClusterSolo\\Island\\ShooterGame\\Saved\\Logs\\ShooterGame.log"
+      "logFile": "D:\\ChaosArk\\ClusterSolo\\Extinction\\ShooterGame\\Saved\\Logs\\ShooterGame.log"
     }
   ],
   "options": {
